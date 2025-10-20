@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Book extends Model
+class Loan extends Model
 {
     /**
      * Los atributos que se pueden asignar masivamente.
@@ -15,11 +14,10 @@ class Book extends Model
      * @author Fahibram Cárcamo
      */
     protected $fillable = [
-        'author_id',
-        'title',
-        'open_library_cover_key',
-        'first_publish_year',
-        'units_available',
+        'user_id',
+        'book_id',
+        'date',
+        'return_date',
     ];
 
     /**
@@ -29,30 +27,31 @@ class Book extends Model
      * @author Fahibram Cárcamo
      */
     protected $casts = [
-        'author_id' => 'integer',
-        'first_publish_year' => 'integer',
-        'units_available' => 'integer'
+        'user_id' => 'integer',
+        'book_id' => 'integer',
+        'date' => 'date',
+        'return_date' => 'date',
     ];
 
     /**
-     * Obtener el autor del libro.
+     * Obtener el usuario asociado al préstamo.
      *
      * @return BelongsTo
      * @author Fahibram Cárcamo
      */
-    public function author(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Author::class);
+        return $this->belongsTo(User::class);
     }
 
     /**
-     * Obtener los préstamos del libro.
+     * Obtener el libro asociado al préstamo.
      *
-     * @return HasMany
+     * @return BelongsTo
      * @author Fahibram Cárcamo
      */
-    public function loans(): HasMany
+    public function book(): BelongsTo
     {
-        return $this->hasMany(Loan::class);
+        return $this->belongsTo(Book::class);
     }
 }

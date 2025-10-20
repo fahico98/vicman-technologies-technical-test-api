@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\RegisterUserRequest;
-use Exception;
 use App\Http\Repositories\UserRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -26,21 +25,18 @@ class AuthController extends Controller
      */
     public function register(RegisterUserRequest $request): JsonResponse
     {
-        $user = $this->user_repository->crear([
+        $user = $this->user_repository->create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
         Auth::login($user);
-        $token = $user->createToken('authToken')->plainTextToken;
 
         return response()->json([
-            'status'        => 'success',
-            'message'       => 'User successfully registered',
-            'user'          => $user,
-            'token'       => $token,
-            'token_type'  => 'Bearer'
+            'status'  => 'success',
+            'message' => 'User successfully registered',
+            'user'    => Auth::user()
         ], 201);
     }
 
@@ -70,6 +66,7 @@ class AuthController extends Controller
     {
         try {
             $user = Auth::user();
+
             return response()->json(['user' => $user]);
         } catch (Exception $exception) {
             return response()->json([
@@ -85,30 +82,22 @@ class AuthController extends Controller
     public function logOut(Request $request)
     {
         try {
-            $user = $request->user();
+            Auth::guard("web")->logout();
 
-            if ($user) {
-                $user->tokens()->delete();
-
-                return response()->json([
-                    'response_code' => 200,
-                    'status'        => 'success',
-                    'message'       => 'Successfully logged out',
-                ]);
-            }
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
             return response()->json([
-                'response_code' => 401,
-                'status'        => 'error',
-                'message'       => 'User not authenticated'
-            ], 401);
-        } catch (Exception $e) {
-            Log::error('Logout Error: ' . $e->getMessage());
+                'status'        => 'success',
+                'message'       => 'Successfully logged out',
+            ]);
+        } catch (Exception $exception) {
+
+            info(json_encode($exception->getTrace(), JSON_PRETTY_PRINT));
 
             return response()->json([
-                'response_code' => 500,
-                'status'        => 'error',
-                'message'       => 'An error occurred during logout'
+                'status'  => 'error',
+                'message' => $exception->getMessage()
             ], 500);
         }
     }
