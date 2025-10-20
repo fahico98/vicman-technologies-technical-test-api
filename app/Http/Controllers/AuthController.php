@@ -6,11 +6,11 @@ use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\RegisterUserRequest;
 use Exception;
 use App\Http\Repositories\UserRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -18,9 +18,13 @@ class AuthController extends Controller
     {}
 
     /**
-     * Register a new account.
+     * Registra a un nuevo usuario.
+     *
+     * @param RegisterUserRequest $request Contenido de la petición HTTP entrante.
+     * @return JsonResponse
+     * @author Fahibram Cárcamo
      */
-    public function register(RegisterUserRequest $request)
+    public function register(RegisterUserRequest $request): JsonResponse
     {
         $user = $this->user_repository->crear([
             'name'     => $request->name,
@@ -45,25 +49,18 @@ class AuthController extends Controller
      */
     public function login(LoginUserRequest $request)
     {
-        if (!Auth::attempt($request->all())) {
+        if (Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'response_code' => 401,
-                'status'        => 'error',
-                'message'       => 'Unauthorized',
-            ], 401);
+                'status'        => 'success',
+                'message'       => 'Login successful',
+                'user'          => Auth::user()
+            ]);
         }
 
-        $user = Auth::user();
-        $token = $user->createToken('authToken')->plainTextToken;
-
         return response()->json([
-            'response_code' => 200,
-            'status'        => 'success',
-            'message'       => 'Login successful',
-            'user'          => $user,
-            'token'       => $token,
-            'token_type'  => 'Bearer'
-        ]);
+            'status'        => 'error',
+            'message'       => 'Unauthorized'
+        ], 401);
     }
 
     /**
@@ -103,15 +100,15 @@ class AuthController extends Controller
             return response()->json([
                 'response_code' => 401,
                 'status'        => 'error',
-                'message'       => 'User not authenticated',
+                'message'       => 'User not authenticated'
             ], 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Logout Error: ' . $e->getMessage());
 
             return response()->json([
                 'response_code' => 500,
                 'status'        => 'error',
-                'message'       => 'An error occurred during logout',
+                'message'       => 'An error occurred during logout'
             ], 500);
         }
     }

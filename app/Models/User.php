@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable;
 
     /**
      * Los atributos que se pueden asignar masivamente.
      *
-     * @var list<string>
+     * @var array
      * @author Fahibram Cárcamo
      */
     protected $fillable = [
@@ -26,7 +25,7 @@ class User extends Authenticatable
     /**
      * Los atributos que deben ocultarse para la serialización.
      *
-     * @var list<string>
+     * @var array
      * @author Fahibram Cárcamo
      */
     protected $hidden = [
@@ -37,7 +36,7 @@ class User extends Authenticatable
     /**
      * Obtiene los atributos que deben ser casteados.
      *
-     * @return array<string, string>
+     * @return array
      * @author Fahibram Cárcamo
      */
     protected function casts(): array

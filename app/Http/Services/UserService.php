@@ -6,17 +6,17 @@ use App\Http\Repositories\UserRepository;
 use App\Http\Services\BaseService;
 
 /**
- * @property UserRepository $repositorio
+ * @property UserRepository $repository
  */
 class UserService extends BaseService
 {
     /**
      * Constructor.
      *
-     * @param UserRepository $repositorio
+     * @param UserRepository $repository
      * @return void
      */
-    public function __construct(UserRepository $repositorio) {
-        parent::__construct($repositorio);
+    public function __construct(UserRepository $repository) {
+        parent::__construct($repository);
     }
 }

@@ -123,4 +123,5 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'open_library_base_url' => env('OPEN_LIBRARY_BASE_URL', 'https://openlibrary.org')
 ];
