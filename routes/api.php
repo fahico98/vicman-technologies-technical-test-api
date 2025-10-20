@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
@@ -27,5 +29,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [BookController::class, 'store'])->middleware([HandlePrecognitiveRequests::class]);
         Route::put('/update/{book_id}', [BookController::class, 'update'])->middleware([HandlePrecognitiveRequests::class]);
         Route::delete('/delete/{book_id}', [BookController::class, 'destroy']);
+    });
+
+    Route::group(['prefix' => 'users'], function () {
+        Route::get('/', [UserController::class, 'index']);
+    });
+
+    Route::group(['prefix' => 'loans'], function () {
+        Route::post('/store', [LoanController::class, 'store'])->middleware([HandlePrecognitiveRequests::class]);
     });
 });
