@@ -9,6 +9,12 @@ API RESTful desarrollada con Laravel 12 para la gestión de una biblioteca digit
 - [Configuración](#configuración)
 - [Variables de Entorno](#variables-de-entorno)
 - [Configuración de Laravel Sanctum para SPA](#configuración-de-laravel-sanctum-para-spa)
+- [Documentación de la API](#-documentación-de-la-api)
+  - [Endpoints de Autores](#endpoints-de-autores)
+  - [Endpoints de Libros](#endpoints-de-libros)
+  - [Endpoints de Usuarios](#endpoints-de-usuarios)
+  - [Endpoints de Préstamos](#endpoints-de-préstamos)
+- [Integración con IA](#-integración-con-ia)
 
 ## 🔧 Requisitos del Sistema
 
@@ -429,782 +435,175 @@ php artisan cache:clear
 
 ### Endpoints de Autores
 
-Todas las rutas de autores requieren autenticación con Laravel Sanctum (middleware `auth:sanctum`).
+Requieren autenticación (`auth:sanctum`). **URL Base:** `/api/authors`
 
-**URL Base:** `/api/authors`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/authors` | Listar autores (con paginación opcional: `?with_pagination=true&per_page=15`) |
+| GET | `/api/authors/{id}` | Obtener autor con sus libros asociados |
+| POST | `/api/authors/store` | Crear nuevo autor |
+| PUT | `/api/authors/update/{id}` | Actualizar autor |
+| DELETE | `/api/authors/delete/{id}` | Eliminar autor (elimina libros en cascada) |
 
-#### 1. Listar todos los autores
+**Headers:** `Authorization: Bearer {token}`, `Content-Type: application/json`
 
-Obtiene una colección de todos los autores, con soporte de paginación opcional.
-
-**Endpoint:** `GET /api/authors`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Accept: application/json
-```
-
-**Query Parameters:**
-- `with_pagination` (boolean, opcional): Si es `true`, retorna resultados paginados
-- `per_page` (integer, opcional): Número de resultados por página (default: 10)
-
-**Ejemplo sin paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/authors" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
+**Crear/Actualizar - Body:**
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "Gabriel García Márquez",
-      "birth_date": "1927-03-06",
-      "top_work": "Cien años de soledad",
-      "work_count": 150,
-      "open_library_key": "/authors/OL13849A",
-      "created_at": "2025-10-20T10:00:00.000000Z",
-      "updated_at": "2025-10-20T10:00:00.000000Z"
-    },
-    {
-      "id": 2,
-      "name": "Franz Kafka",
-      "birth_date": "1883-07-03",
-      "top_work": "La metamorfosis",
-      "work_count": 89,
-      "open_library_key": "/authors/OL19976A",
-      "created_at": "2025-10-20T10:05:00.000000Z",
-      "updated_at": "2025-10-20T10:05:00.000000Z"
-    }
-  ]
+  "name": "string (requerido)",
+  "birth_date": "string (opcional)",
+  "top_work": "string (opcional)",
+  "work_count": "integer (opcional)"
 }
 ```
 
-**Ejemplo con paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/authors?with_pagination=true&per_page=15" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json"
-```
+**Respuestas:**
+- `200 OK` / `201 Created`: Operación exitosa
+- `422 Unprocessable Entity`: Error de validación
+- `500 Internal Server Error`: Error del servidor
 
-**Respuesta paginada (200 OK):**
-```json
-{
-  "data": {
-    "current_page": 1,
-    "data": [
-      {
-        "id": 1,
-        "name": "Gabriel García Márquez",
-        "birth_date": "1927-03-06",
-        ...
-      }
-    ],
-    "first_page_url": "http://localhost:8000/api/authors?page=1",
-    "from": 1,
-    "last_page": 2,
-    "last_page_url": "http://localhost:8000/api/authors?page=2",
-    "next_page_url": "http://localhost:8000/api/authors?page=2",
-    "path": "http://localhost:8000/api/authors",
-    "per_page": 15,
-    "prev_page_url": null,
-    "to": 15,
-    "total": 20
-  }
-}
-```
-
-#### 2. Obtener un autor específico
-
-Retorna la información de un autor junto con todos sus libros asociados.
-
-**Endpoint:** `GET /api/authors/{author_id}`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Accept: application/json
-```
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8000/api/authors/1" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "data": {
-    "id": 1,
-    "name": "Gabriel García Márquez",
-    "birth_date": "1927-03-06",
-    "top_work": "Cien años de soledad",
-    "work_count": 150,
-    "open_library_key": "/authors/OL13849A",
-    "created_at": "2025-10-20T10:00:00.000000Z",
-    "updated_at": "2025-10-20T10:00:00.000000Z",
-    "books": [
-      {
-        "id": 1,
-        "title": "Cien años de soledad",
-        "author_id": 1,
-        "open_library_cover_key": "OL123456W",
-        "first_publish_year": 1967,
-        "units_available": 15,
-        "created_at": "2025-10-20T10:30:00.000000Z",
-        "updated_at": "2025-10-20T10:30:00.000000Z"
-      },
-      {
-        "id": 2,
-        "title": "El amor en los tiempos del cólera",
-        "author_id": 1,
-        "open_library_cover_key": "OL789012W",
-        "first_publish_year": 1985,
-        "units_available": 8,
-        "created_at": "2025-10-20T10:31:00.000000Z",
-        "updated_at": "2025-10-20T10:31:00.000000Z"
-      }
-    ]
-  }
-}
-```
-
-#### 3. Crear un nuevo autor
-
-Crea un nuevo autor en la base de datos. El sistema automáticamente intenta obtener información adicional desde Open Library API.
-
-**Endpoint:** `POST /api/authors/store`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Accept: application/json
-Content-Type: application/json
-```
-
-**Body (JSON):**
-```json
-{
-  "name": "Isabel Allende",
-  "birth_date": "1942-08-02",
-  "top_work": "La casa de los espíritus",
-  "work_count": 75
-}
-```
-
-**Campos de validación:**
-- `name` (string, requerido, max: 255): Nombre del autor
-- `birth_date` (string, opcional, max: 255): Fecha de nacimiento
-- `top_work` (string, opcional, max: 255): Obra principal
-- `work_count` (integer, opcional, min: 0): Número de obras publicadas
-
-**Ejemplo:**
-```bash
-curl -X POST "http://localhost:8000/api/authors/store" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Isabel Allende",
-    "birth_date": "1942-08-02",
-    "top_work": "La casa de los espíritus",
-    "work_count": 75
-  }'
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "message": "Autor creado exitosamente",
-  "data": {
-    "id": 21,
-    "name": "Isabel Allende",
-    "birth_date": "1942-08-02",
-    "top_work": "La casa de los espíritus",
-    "work_count": 75,
-    "open_library_key": "/authors/OL26320A",
-    "created_at": "2025-10-20T15:00:00.000000Z",
-    "updated_at": "2025-10-20T15:00:00.000000Z"
-  }
-}
-```
-
-**Respuesta de error de validación (422 Unprocessable Entity):**
-```json
-{
-  "message": "The name field is required.",
-  "errors": {
-    "name": [
-      "El nombre del autor es obligatorio."
-    ]
-  }
-}
-```
-
-**Respuesta de error del servidor (500 Internal Server Error):**
-```json
-{
-  "message": "Error al crear el autor",
-  "error": "Detalle del error..."
-}
-```
-
-#### 4. Actualizar un autor existente
-
-Actualiza la información de un autor. Permite actualizaciones parciales.
-
-**Endpoint:** `PUT /api/authors/update/{author_id}`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Accept: application/json
-Content-Type: application/json
-```
-
-**Body (JSON):**
-```json
-{
-  "name": "Gabriel García Márquez",
-  "work_count": 165
-}
-```
-
-**Campos de validación:**
-- Todos los campos son opcionales
-- Si se envía `name`, es requerido (validación: `sometimes|required`)
-
-**Ejemplo:**
-```bash
-curl -X PUT "http://localhost:8000/api/authors/update/1" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "work_count": 165
-  }'
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "message": "Autor actualizado exitosamente",
-  "data": {
-    "id": 1,
-    "name": "Gabriel García Márquez",
-    "birth_date": "1927-03-06",
-    "top_work": "Cien años de soledad",
-    "work_count": 165,
-    "open_library_key": "/authors/OL13849A",
-    "created_at": "2025-10-20T10:00:00.000000Z",
-    "updated_at": "2025-10-20T16:30:00.000000Z"
-  }
-}
-```
-
-**Respuesta de error (500 Internal Server Error):**
-```json
-{
-  "message": "Error al actualizar el autor",
-  "error": "Detalle del error..."
-}
-```
-
-#### 5. Eliminar un autor
-
-Elimina un autor de la base de datos. **Importante:** Todos los libros asociados también serán eliminados debido al `onDelete('cascade')`.
-
-**Endpoint:** `DELETE /api/authors/delete/{author_id}`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Accept: application/json
-```
-
-**Ejemplo:**
-```bash
-curl -X DELETE "http://localhost:8000/api/authors/delete/1" \
-  -H "Authorization: Bearer {token}" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "message": "Autor eliminado exitosamente"
-}
-```
-
-### Códigos de Estado HTTP
-
-| Código | Significado | Cuándo se usa |
-|--------|-------------|---------------|
-| 200 | OK | Operación exitosa (GET, PUT, DELETE) |
-| 201 | Created | Recurso creado exitosamente (POST) |
-| 422 | Unprocessable Entity | Error de validación |
-| 500 | Internal Server Error | Error del servidor |
-| 401 | Unauthorized | Token de autenticación inválido o faltante |
-
-### Notas Importantes
-
-1. **Autenticación requerida:** Todas las rutas de autores requieren un token de autenticación válido.
-
-2. **Integración con Open Library:** Al crear o actualizar un autor, el sistema automáticamente intenta buscar y agregar la `open_library_key` desde la API de Open Library basándose en el nombre del autor.
-
-3. **Eliminación en cascada:** Al eliminar un autor, todos sus libros asociados también se eliminan automáticamente.
-
-4. **Paginación:** Por defecto, sin el parámetro `with_pagination`, se retornan todos los autores. Con paginación activada, se muestran 10 autores por página (configurable con `per_page`).
-
-5. **Relaciones eager loading:** El método `show` carga automáticamente todos los libros del autor usando eager loading para optimizar las consultas a la base de datos.
+**Notas:**
+- Sistema busca automáticamente `open_library_key` en Open Library API
+- Eliminación en cascada elimina todos los libros del autor
+- Paginación: 10 autores por página por defecto
 
 ---
 
 ### Endpoints de Libros
 
-Todas las rutas de libros requieren autenticación con Laravel Sanctum (middleware `auth:sanctum`).
+Requieren autenticación (`auth:sanctum`). **URL Base:** `/api/books`
 
-**URL Base:** `/api/books`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/books` | Listar libros (con paginación opcional: `?with_pagination=true&per_page=20`) |
+| GET | `/api/books/{id}` | Obtener libro específico |
+| POST | `/api/books/store` | Crear nuevo libro |
+| PUT | `/api/books/update/{id}` | Actualizar libro |
+| DELETE | `/api/books/delete/{id}` | Eliminar libro (elimina préstamos en cascada) |
 
-#### 1. Listar todos los libros
+**Headers:** `Content-Type: application/json`
 
-Obtiene una colección de todos los libros, con soporte de paginación opcional.
-
-**Endpoint:** `GET /api/books`
-
-**Headers:**
-```
-Accept: application/json
-```
-
-**Query Parameters:**
-- `with_pagination` (boolean, opcional): Si es `true`, retorna resultados paginados
-- `per_page` (integer, opcional): Número de resultados por página (default: 10)
-
-**Ejemplo sin paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/books" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
+**Crear/Actualizar - Body:**
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "title": "Cien años de soledad",
-      "author_id": 1,
-      "open_library_cover_key": "OL123456W",
-      "first_publish_year": 1967,
-      "units_available": 15,
-      "created_at": "2025-10-20T10:30:00.000000Z",
-      "updated_at": "2025-10-20T10:30:00.000000Z"
-    },
-    {
-      "id": 2,
-      "title": "El amor en los tiempos del cólera",
-      "author_id": 1,
-      "open_library_cover_key": "OL789012W",
-      "first_publish_year": 1985,
-      "units_available": 8,
-      "created_at": "2025-10-20T10:31:00.000000Z",
-      "updated_at": "2025-10-20T10:31:00.000000Z"
-    }
-  ]
+  "author_id": "integer (requerido en creación)",
+  "title": "string (requerido)",
+  "first_publish_year": "integer (opcional, min: 1, max: año actual)",
+  "units_available": "integer (opcional, min: 0)"
 }
 ```
 
-**Ejemplo con paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/books?with_pagination=true&per_page=20" \
-  -H "Accept: application/json"
-```
+**Respuestas:**
+- `200 OK` / `201 Created`: Operación exitosa
+- `422 Unprocessable Entity`: Error de validación
+- `500 Internal Server Error`: Error del servidor
 
-#### 2. Obtener un libro específico
-
-Retorna la información de un libro.
-
-**Endpoint:** `GET /api/books/{book_id}`
-
-**Headers:**
-```
-Accept: application/json
-```
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8000/api/books/1" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "data": {
-    "id": 1,
-    "title": "Cien años de soledad",
-    "author_id": 1,
-    "open_library_cover_key": "OL123456W",
-    "first_publish_year": 1967,
-    "units_available": 15,
-    "created_at": "2025-10-20T10:30:00.000000Z",
-    "updated_at": "2025-10-20T10:30:00.000000Z"
-  }
-}
-```
-
-#### 3. Crear un nuevo libro
-
-Crea un nuevo libro en la base de datos asociado a un autor existente.
-
-**Endpoint:** `POST /api/books/store`
-
-**Headers:**
-```
-Accept: application/json
-Content-Type: application/json
-```
-
-**Body (JSON):**
-```json
-{
-  "author_id": 1,
-  "title": "Crónica de una muerte anunciada",
-  "first_publish_year": 1981,
-  "units_available": 10
-}
-```
-
-**Campos de validación:**
-- `author_id` (integer, requerido): ID del autor (debe existir en la tabla authors)
-- `title` (string, requerido, max: 255): Título del libro
-- `first_publish_year` (integer, opcional, min: 1, max: año actual): Año de primera publicación
-- `units_available` (integer, opcional, min: 0): Unidades disponibles para préstamo (default: 0)
-
-**Ejemplo:**
-```bash
-curl -X POST "http://localhost:8000/api/books/store" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "author_id": 1,
-    "title": "Crónica de una muerte anunciada",
-    "first_publish_year": 1981,
-    "units_available": 10
-  }'
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "message": "Libro creado exitosamente",
-  "data": {
-    "id": 151,
-    "title": "Crónica de una muerte anunciada",
-    "author_id": 1,
-    "open_library_cover_key": null,
-    "first_publish_year": 1981,
-    "units_available": 10,
-    "created_at": "2025-10-20T15:00:00.000000Z",
-    "updated_at": "2025-10-20T15:00:00.000000Z"
-  }
-}
-```
-
-**Respuesta de error de validación (422 Unprocessable Entity):**
-```json
-{
-  "message": "The author id field is required.",
-  "errors": {
-    "author_id": [
-      "El autor es obligatorio."
-    ],
-    "title": [
-      "El título del libro es obligatorio."
-    ]
-  }
-}
-```
-
-**Respuesta de error del servidor (500 Internal Server Error):**
-```json
-{
-  "message": "Error al crear el libro",
-  "error": "Detalle del error..."
-}
-```
-
-#### 4. Actualizar un libro existente
-
-Actualiza la información de un libro. Permite actualizaciones parciales.
-
-**Endpoint:** `PUT /api/books/update/{book_id}`
-
-**Headers:**
-```
-Accept: application/json
-Content-Type: application/json
-```
-
-**Body (JSON):**
-```json
-{
-  "units_available": 20
-}
-```
-
-**Ejemplo:**
-```bash
-curl -X PUT "http://localhost:8000/api/books/update/1" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "units_available": 20
-  }'
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "message": "Libro actualizado exitosamente",
-  "data": {
-    "id": 1,
-    "title": "Cien años de soledad",
-    "author_id": 1,
-    "open_library_cover_key": "OL123456W",
-    "first_publish_year": 1967,
-    "units_available": 20,
-    "created_at": "2025-10-20T10:30:00.000000Z",
-    "updated_at": "2025-10-20T16:45:00.000000Z"
-  }
-}
-```
-
-**Respuesta de error (500 Internal Server Error):**
-```json
-{
-  "message": "Error al actualizar el libro",
-  "error": "Detalle del error..."
-}
-```
-
-#### 5. Eliminar un libro
-
-Elimina un libro de la base de datos. **Importante:** Si el libro tiene préstamos activos, también se eliminarán debido al `onDelete('cascade')`.
-
-**Endpoint:** `DELETE /api/books/delete/{book_id}`
-
-**Headers:**
-```
-Accept: application/json
-```
-
-**Ejemplo:**
-```bash
-curl -X DELETE "http://localhost:8000/api/books/delete/1" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "message": "Libro eliminado exitosamente"
-}
-```
+**Notas:**
+- Cada libro debe estar asociado a un autor existente
+- `units_available` se reduce automáticamente al registrar préstamos
+- Eliminación en cascada elimina todos los préstamos del libro
+- Paginación: 10 libros por página por defecto
 
 ### Endpoints de Usuarios
 
-Todas las rutas de usuarios requieren autenticación con Laravel Sanctum (middleware `auth:sanctum`).
+Requieren autenticación (`auth:sanctum`). **URL Base:** `/api/users`
 
-**URL Base:** `/api/users`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/users` | Listar usuarios (con paginación opcional: `?with_pagination=true&per_page=15`) |
 
-#### 1. Listar todos los usuarios
+**Headers:** `Content-Type: application/json`
 
-Obtiene una colección de todos los usuarios registrados, con soporte de paginación opcional.
+**Respuestas:**
+- `200 OK`: Operación exitosa
+- `422 Unprocessable Entity`: Error de validación
+- `500 Internal Server Error`: Error del servidor
 
-**Endpoint:** `GET /api/users`
-
-**Headers:**
-```
-Accept: application/json
-```
-
-**Query Parameters:**
-- `with_pagination` (boolean, opcional): Si es `true`, retorna resultados paginados
-- `per_page` (integer, opcional): Número de resultados por página (default: 10)
-
-**Ejemplo sin paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/users" \
-  -H "Accept: application/json"
-```
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "name": "Juan Pérez",
-      "email": "juan@ejemplo.com",
-      "email_verified_at": null,
-      "created_at": "2025-10-20T08:00:00.000000Z",
-      "updated_at": "2025-10-20T08:00:00.000000Z"
-    },
-    {
-      "id": 2,
-      "name": "María González",
-      "email": "maria@ejemplo.com",
-      "email_verified_at": "2025-10-20T09:00:00.000000Z",
-      "created_at": "2025-10-20T08:15:00.000000Z",
-      "updated_at": "2025-10-20T09:00:00.000000Z"
-    }
-  ]
-}
-```
-
-**Ejemplo con paginación:**
-```bash
-curl -X GET "http://localhost:8000/api/users?with_pagination=true&per_page=15" \
-  -H "Accept: application/json"
-```
+**Notas:**
+- Solo lectura disponible. Crear usuarios mediante `/api/register`
+- Paginación: 10 usuarios por página por defecto
 
 ### Endpoints de Préstamos
 
-Todas las rutas de préstamos requieren autenticación con Laravel Sanctum (middleware `auth:sanctum`).
+Requieren autenticación (`auth:sanctum`). **URL Base:** `/api/loans`
 
-**URL Base:** `/api/loans`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/loans/store` | Registrar nuevo préstamo |
 
-#### 1. Registrar un nuevo préstamo
+**Headers:** `Content-Type: application/json`
 
-Registra un préstamo de libro. Valida que el libro tenga unidades disponibles y reduce automáticamente el inventario en 1 unidad.
-
-**Endpoint:** `POST /api/loans/store`
-
-**Headers:**
-```
-Accept: application/json
-Content-Type: application/json
-```
-
-**Body (JSON):**
+**Crear - Body:**
 ```json
 {
-  "user_id": 1,
-  "book_id": 5,
-  "date": "2025-10-20",
-  "return_date": "2025-11-10"
+  "user_id": "integer (requerido)",
+  "book_id": "integer (requerido)",
+  "date": "date YYYY-MM-DD (requerido, no futuro)",
+  "return_date": "date YYYY-MM-DD (requerido)"
 }
 ```
 
-**Campos de validación:**
-- `user_id` (integer, requerido): ID del usuario (debe existir en la tabla users)
-- `book_id` (integer, requerido): ID del libro (debe existir en la tabla books)
-- `date` (date, requerido): Fecha del préstamo (formato: YYYY-MM-DD, no puede ser futura)
-- `return_date` (date, requerido): Fecha de devolución prevista (debe ser posterior a `date` y no puede exceder 30 días de diferencia)
+**Validaciones:**
+- `date` ≤ hoy
+- `return_date` > `date`
+- `return_date` - `date` ≤ 30 días
+- Libro debe tener ≥ 1 unidad disponible
 
-**Validaciones especiales:**
-- La fecha de préstamo no puede ser futura (`before_or_equal:today`)
-- La fecha de devolución debe ser posterior a la fecha de préstamo (`after:date`)
-- La diferencia entre `date` y `return_date` no puede ser mayor a 30 días
-- El libro debe tener al menos 1 unidad disponible
+**Respuestas:**
+- `201 Created`: Préstamo registrado
+- `200 OK`: Libro sin unidades disponibles
+- `422 Unprocessable Entity`: Error de validación
+- `500 Internal Server Error`: Error del servidor
 
-**Ejemplo:**
-```bash
-curl -X POST "http://localhost:8000/api/loans/store" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": 1,
-    "book_id": 5,
-    "date": "2025-10-20",
-    "return_date": "2025-11-10"
-  }'
-```
+**Notas:**
+- `units_available` se reduce automáticamente en 1 al registrar préstamo
+- Eliminación de libro o usuario elimina todos sus préstamos (cascade)
+- Máximo 30 días de duración por préstamo
 
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "message": "Prestamo registrado exitosamente",
-  "data": {
-    "id": 21,
-    "user_id": 1,
-    "book_id": 5,
-    "date": "2025-10-20",
-    "return_date": "2025-11-10",
-    "created_at": "2025-10-20T15:30:00.000000Z",
-    "updated_at": "2025-10-20T15:30:00.000000Z"
-  }
-}
-```
+---
 
-**Respuesta cuando no hay unidades disponibles (200 OK):**
-```json
-{
-  "message": "El libro no tiene unidades disponibles"
-}
-```
+## 🤖 Integración con IA
 
-**Respuesta de error de validación (422 Unprocessable Entity):**
-```json
-{
-  "message": "The date field is required.",
-  "errors": {
-    "user_id": [
-      "El usuario es obligatorio."
-    ],
-    "book_id": [
-      "El libro es obligatorio."
-    ],
-    "date": [
-      "La fecha de préstamo es obligatoria."
-    ],
-    "return_date": [
-      "La fecha de devolución no puede ser mayor a 30 días después de la fecha de préstamo."
-    ]
-  }
-}
-```
+Este proyecto está optimizado para trabajar con **Claude Code** (claude.ai/code), el IDE de Anthropic.
 
-**Respuesta de error del servidor (500 Internal Server Error):**
-```json
-{
-  "message": "Error al registrar el prestamo",
-  "error": "Detalle del error..."
-}
-```
+### Archivo de Contexto: `@CLAUDE.md`
 
-### Códigos de Estado HTTP
+El archivo `CLAUDE.md` en la raíz del proyecto actúa como un contextualizador automático para Claude Code. Contiene:
 
-| Código | Significado | Cuándo se usa |
-|--------|-------------|---------------|
-| 200 | OK | Operación exitosa (GET, PUT, DELETE) |
-| 201 | Created | Recurso creado exitosamente (POST) |
-| 422 | Unprocessable Entity | Error de validación |
-| 500 | Internal Server Error | Error del servidor |
-| 401 | Unauthorized | Token de autenticación inválido o faltante |
+- **Descripción del proyecto** y stack tecnológico (Laravel 12, PHP 8.2+, Vite, Tailwind CSS 4.0)
+- **Comandos de desarrollo** para configuración y ejecución
+- **Arquitectura del proyecto** incluyendo Bootstrap, Rutas y Estructura de directorios
+- **Configuración de CORS y Sanctum** para aplicaciones externas (React/Vue/Angular)
+- **Patrones comunes** del proyecto:
+  - Patrón Controlador-Servicio-Repositorio (CSR)
+  - Estructura de directorios y subdirectorios
+  - Convenciones de nombres
 
-### Notas Importantes
+### Cómo usar Claude Code con este proyecto
 
-#### Libros
-1. **Relación con autores:** Cada libro debe estar asociado a un autor existente. Si el autor es eliminado, sus libros también se eliminan (cascade).
-2. **Integración con Open Library:** El sistema puede obtener automáticamente la `open_library_cover_key` desde la API de Open Library.
-3. **Gestión de inventario:** El campo `units_available` se reduce automáticamente al registrar un préstamo.
+1. **Abrir el proyecto en Claude Code:**
+   - Navega a [claude.ai/code](https://claude.ai/code)
+   - Abre la carpeta del proyecto
 
-#### Usuarios
-1. **Solo lectura:** Por ahora, solo está disponible el endpoint de listado. La creación de usuarios se realiza mediante el endpoint `/api/register`.
+2. **Contexto automático:**
+   - Claude automáticamente lee `CLAUDE.md` para entender la arquitectura
+   - Todos los comandos, rutas y patrones están contextualizados
+   - Las convenciones del proyecto se siguen automáticamente
 
-#### Préstamos
-1. **Validación de fechas:** El sistema valida estrictamente las fechas de préstamo y devolución, limitando los préstamos a un máximo de 30 días.
-2. **Inventario automático:** Al registrar un préstamo, el sistema verifica disponibilidad y reduce automáticamente las `units_available` del libro en 1 unidad.
-3. **Relaciones bidireccionales:** Los préstamos están relacionados tanto con usuarios como con libros mediante claves foráneas con cascade delete.
+3. **Tareas soportadas:**
+   - Crear nuevas funcionalidades siguiendo el patrón CSR
+   - Debuggear y resolver problemas
+   - Refactorizar código manteniendo patrones
+   - Generar migraciones y modelos
+   - Escribir pruebas siguiendo las convenciones del proyecto
+
+### Ventajas
+
+- ✅ Coherencia arquitectónica automática
+- ✅ Convenciones de código respetadas
+- ✅ Estructura de directorios consistente
+- ✅ Comandos de desarrollo listos
+- ✅ Documentación siempre accesible
 
 ---
 
